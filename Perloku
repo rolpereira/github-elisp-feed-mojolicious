@@ -1,0 +1,2 @@
+#!/bin/sh
+./GithubElispFeed daemon --listen http://*:$PORT --mode production
