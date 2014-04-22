@@ -38,3 +38,13 @@ Finally deploy it to heroku using:
 To open your application in a browser use the command:
 
     heroku open
+
+
+-------------------------------------------------------------------------------
+
+# Available endpoints #
+
+Currently there are two available endpoints:
+
+- `/` is the default endpoint and it lists all the new Emacs Lisp repositories that were created during the current day
+- `/nodotemacs` is a endpoint that lists all the new Emacs Lisp repositories that were created during the current day except for those repositories that look like a user's "dotemacs" or ".emacs.d" repositories
