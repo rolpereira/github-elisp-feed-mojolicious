@@ -40,6 +40,14 @@ plugin 'PODRenderer';
 #   $self->render(text => $feed, format => 'xml');
 # };
 
+get '/nodotemacs' => sub {
+  my $self = shift;
+
+  my $feed = ParseGithubFeed::makeFeedNoEmacsRepos();
+
+  $self->render(text => $feed, format => 'xml');
+};
+
 get '/' => sub {
   my $self = shift;
 

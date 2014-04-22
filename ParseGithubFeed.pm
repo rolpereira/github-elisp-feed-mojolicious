@@ -113,6 +113,40 @@ sub makeAtomEntry {
   return $entry;
 }
 
+# Just like "makeFeed" except it doesn't display the repositories that
+# it considers as being a "dotemacs" repository.
+#
+# Receives no arguments.
+#
+# Returns a XML string containing the feed.
+sub makeFeedNoEmacsRepos {
+  my @repositories = fetchRepositories();
+
+
+  my $feed = XML::Feed->new('Atom');
+
+  $feed->title("New GitHub Emacs Lisp Repos");
+  $feed->link("http://github-elisp.herokuapp.com");
+
+  foreach my $repo (@repositories) {
+    my $repoName = $repo->{name};
+
+    my $isDotEmacsRepo = 0;
+
+    $isDotEmacsRepo = 1 if $repoName =~ /dot[-_]?files?/i;
+    $isDotEmacsRepo = 1 if $repoName =~ /dot[-_]?emacs\.?d?/i;
+    $isDotEmacsRepo = 1 if $repoName =~ /^\.?emacs\.?d?$/i;
+    $isDotEmacsRepo = 1 if $repoName =~ /emacs[-_]?config/i;
+    $isDotEmacsRepo = 1 if $repoName =~ /emacs[-_]?settings/i;
+
+    if (not $isDotEmacsRepo) {
+      $feed->add_entry(makeAtomEntry($repo));
+    }
+  }
+
+  return $feed->as_xml;
+}
+
 # sub getEmacsMirrors {
 #   my $token = read_file("token.txt");
 
