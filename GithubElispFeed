@@ -32,13 +32,13 @@ app->secrets(['dummy passphrase since there are no logins in this site']);
 # Documentation browser under "/perldoc"
 plugin 'PODRenderer';
 
-# get '/nomirror' => sub {
-#   my $self = shift;
+get '/noemacsmirror' => sub {
+  my $self = shift;
 
-#   my $feed = ParseGithubFeed::getEmacsMirrors();
+  my $feed = ParseGithubFeed::makeFeedNoEmacsMirrorRepos();
 
-#   $self->render(text => $feed, format => 'xml');
-# };
+  $self->render(text => $feed, format => 'xml');
+};
 
 get '/nodotemacs' => sub {
   my $self = shift;

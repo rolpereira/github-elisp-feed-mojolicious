@@ -26,6 +26,8 @@ use Net::GitHub::V3;
 use DateTime;
 use DateTime::Format::ISO8601;
 use File::Slurp;
+use DBI;
+use DBD::Pg;
 
 # Receive a hash containing the data returned by Net::GitHub::Query
 # and return a hash with the following fields:
@@ -145,6 +147,86 @@ sub makeFeedNoEmacsRepos {
   }
 
   return $feed->as_xml;
+}
+
+sub makeFeedNoEmacsMirrorRepos {
+  my @repositories = fetchRepositories();
+
+  my $feed = XML::Feed->new('Atom');
+
+  $feed->title("New GitHub Emacs Lisp Repos");
+  $feed->link("http://github-elisp.herokuapp.com");
+
+  # Remove the repos that are already known to "emacsmirror"
+
+
+  my %emacsMirrorRepos = map { $_ => 1 } getReposInEmacsMirror();
+
+  my @unknownRepos = grep { not exists $emacsMirrorRepos{ $_->{name} } }
+                     @repositories;
+
+  foreach my $repo ( @unknownRepos ) {
+    $feed->add_entry(makeAtomEntry($repo));
+  }
+
+  return $feed->as_xml;
+}
+
+sub getReposInEmacsMirror {
+  # Connect to the database and retrieve the names of the repos that
+  # already exist in the user account "emacsmirror"
+
+  my $dbh;
+  # When this site is running in Heroku the database connection string
+  # is stored in the environment variable DATABASE_URL
+  #
+  # The format for this variable is the follow:
+  #
+  #    postgres://<$USERNAME>:<$PASSWORD>@<$HOST>:<$PORT>/<$DBNAME>
+  if (defined $ENV{DATABASE_URL}) {
+    if ($ENV{DATABASE_URL} =~ m|^postgres://(.*?):(.*?)@(.*?):(.*?)/(.*?)$|) {
+      my $username = $1;
+      my $password = $2;
+      my $host = $3;
+      my $port = $4;
+      my $dbname = $5;
+
+      # The string used by DBD::Pg to connect to the PostgreSQL
+      # database has the following format:
+      #
+      #    dbi:Ph:dbname=<$DBNAME>;host=<$HOST>;port=<$PORT>
+      $dbh = DBI->connect("dbi:Pg:dbname=$dbname;host=$host;port=$port",
+                          $username, $password,
+                          {
+                           AutoCommit => 0 }
+                         );
+    }
+    # We are running this application locally
+    elsif ($ENV{DATABASE_URL} =~ m|^postgres://localhost/(.*?)$|) {
+      my $dbname = $1;
+
+      $dbh = DBI->connect("dbi:Pg:dbname=$dbname", '', '', {AutoCommit => 0});
+    } else {
+      warn "Format of DATABASE_URL is wrong. Got $ENV{DATABASE_URL}";
+    }
+  } else {
+    die "Environment variable DATABASE_URL doesn't exist.";
+  }
+  ########################################
+
+  $dbh->do('CREATE TABLE IF NOT EXISTS emacsmirror_repos (
+                name TEXT NOT NULL UNIQUE
+            )');
+
+  ## Remove all the names that already exist in the database
+  my $namesInDB = $dbh->selectall_arrayref("SELECT name FROM emacsmirror_repos");
+
+
+  my @repoNamesInDB = map { $_->[0] } @{ $namesInDB };
+
+  $dbh->disconnect();
+
+  return @repoNamesInDB;
 }
 
 # sub getEmacsMirrors {
